@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Crossword Book Studio</title>
+<style>
+:root{--ink:#171717;--muted:#666;--line:#c9c9c9;--paper:#fff;--panel:#f4f5f6;--accent:#243b53}
+*{box-sizing:border-box}body{margin:0;background:#edf0f2;color:var(--ink);font:14px/1.45 Arial,Helvetica,sans-serif}
+header{background:#18232e;color:white;padding:16px 22px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+header h1{font-size:19px;margin:0;letter-spacing:.2px}header small{color:#d3dce4}
+main{max-width:1500px;margin:auto;padding:18px;display:grid;grid-template-columns:minmax(320px,430px) minmax(0,1fr);gap:18px}
+.panel{background:white;border:1px solid #d9dde0;padding:16px;min-width:0}.panel h2{font-size:15px;margin:0 0 12px;text-transform:uppercase;letter-spacing:.07em}
+.tabs{display:flex;gap:6px;margin-bottom:12px}.tabs button,.btn{border:1px solid #aeb6bd;background:#fff;padding:8px 12px;cursor:pointer;font-weight:600;color:#202a33}.tabs button.active,.btn.primary{background:#243b53;color:white;border-color:#243b53}.btn.danger{color:#9b2525;border-color:#d5aaaa}.btn:disabled{opacity:.45;cursor:not-allowed}
+label{display:block;font-size:12px;font-weight:700;color:#454d54;margin:10px 0 4px}input,textarea,select{width:100%;padding:8px;border:1px solid #bfc6cc;border-radius:0;background:white;font:14px Arial}textarea{min-height:90px;resize:vertical}
+.row{display:flex;gap:8px;align-items:end}.row>*{flex:1;min-width:0}.actions{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}
+.wordlist{border-top:1px solid #ddd;margin-top:12px;max-height:310px;overflow:auto}.word{display:grid;grid-template-columns:1fr auto auto;gap:6px;padding:8px 0;border-bottom:1px solid #e7e7e7;align-items:center}.word strong{letter-spacing:.04em}.word small{display:block;color:#555}.word button{padding:5px 8px}
+.settings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 10px}.check{display:flex;align-items:center;gap:7px;font-weight:400}.check input{width:auto}
+#previewPanel{min-height:600px}.preview-toolbar{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.paper{background:white;color:#111;padding:22px;margin:0 auto;max-width:100%;min-height:400px}.paper h2{text-align:center;font-size:17px;letter-spacing:.08em;margin:0 0 15px}.gridwrap{display:flex;justify-content:center;overflow:auto;padding:5px}.crossword{border-collapse:collapse;table-layout:fixed;flex:none}.crossword td{padding:0;border:1px solid #bfc2c4;position:relative;background:white;width:var(--cell);height:var(--cell);min-width:var(--cell);max-width:var(--cell);cursor:pointer}
+.crossword td.block{background:#333;border-color:#333}.crossword td .num{position:absolute;top:1px;left:2px;font-size:calc(var(--cell)*.22);line-height:1;font-family:Arial;color:#111}.crossword td .letter{display:flex;align-items:center;justify-content:center;height:100%;font-size:calc(var(--cell)*.56);font-weight:600}
+.labels-grid{display:grid;grid-template-columns:auto 1fr;gap:5px;align-items:start}.rowlabels{display:grid;align-items:center;color:#333;font:11px Arial}.colnums{display:flex;justify-content:center;color:#333;font:11px Arial;margin-bottom:3px}.colnums span{width:var(--cell);text-align:center;flex:none}
+.clues{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:20px auto 0;max-width:900px}.clues h3{font-size:13px;letter-spacing:.1em;border-bottom:1px solid #777;padding-bottom:4px}.clues ol{padding-left:23px;margin:6px 0}.clues li{margin:0 0 5px;break-inside:avoid}
+.status{padding:9px;background:#f2f4f6;border-left:3px solid #8293a2;margin:10px 0;color:#37434d}.status.warn{border-color:#b36b24}.excluded{font-size:12px;color:#8b2929}.hint{color:#606970;font-size:12px}.hidden{display:none!important}
+footer{max-width:1500px;margin:0 auto;padding:0 18px 20px;color:#68727a;font-size:12px}
+@media(max-width:900px){main{grid-template-columns:1fr}#previewPanel{min-height:0}.paper{padding:12px}}
+@media print{body{background:white}.no-print,header,footer,main>.panel:first-child,.preview-toolbar{display:none!important}main{display:block;margin:0;padding:0;max-width:none}.panel{border:0;padding:0}#previewPanel{min-height:0}.paper{padding:8mm;max-width:none;min-height:0}.crossword td{cursor:default}.clues{break-inside:avoid} @page{size:A4 portrait;margin:10mm} }
+</style></head>
+<body>
+<header><div><h1>Crossword Book Studio</h1><small>Traditional print crossword creator · local-only project</small></div><div class="hint" style="color:#d3dce4">HTML · CSS · Vanilla JavaScript</div></header>
+<main>
+<section class="panel no-print" id="editor">
+<div class="tabs"><button class="active" data-tab="words">Words & clues</button><button data-tab="settings">Grid settings</button><button data-tab="project">Project</button></div>
+<div id="wordsTab">
+<h2>Word editor</h2>
+<label for="answer">Word / Answer</label><input id="answer" placeholder="e.g. ALGER" autocomplete="off">
+<label for="clue">Clue / Definition</label><input id="clue" placeholder="e.g. Capitale blanche">
+<div class="actions"><button class="btn primary" id="addWord">Add word</button><button class="btn" id="cancelEdit" hidden>Cancel edit</button></div>
+<label for="bulk">Paste multiple entries</label><textarea id="bulk" placeholder="ALGER — Capitale blanche&#10;ORAN — Berceau du raï&#10;CONSTANTINE — Ville des ponts suspendus"></textarea>
+<div class="hint">One entry per line. Separate answer and clue with —, –, hyphen, tab, or |.</div>
+<div class="actions"><button class="btn" id="bulkAdd">Import entries</button></div>
+<div class="wordlist" id="wordList"></div>
+<div class="actions"><button class="btn primary" id="generate">Generate crossword</button><button class="btn" id="regenerate">Try another layout</button></div>
+<div id="genStatus" class="status">Add words, then generate your crossword. At least one answer is required.</div>
+</div>
+<div id="settingsTab" class="hidden">
+<h2>Grid & print settings</h2>
+<div class="settings">
+<div><label>Rows</label><input id="rows" type="number" min="5" max="40" value="15"></div>
+<div><label>Columns</label><input id="cols" type="number" min="5" max="40" value="15"></div>
+<div><label>Cell size (px)</label><input id="cellSize" type="number" min="12" max="60" value="30"></div>
+<div><label>Border thickness (px)</label><input id="border" type="number" min="0.5" max="4" step=".5" value="1"></div>
+<div><label>Blocked cell color</label><input id="blockColor" type="color" value="#333333"></div>
+<div><label>Grid line color</label><input id="lineColor" type="color" value="#bfc2c4"></div>
+<div><label>Page orientation</label><select id="orientation"><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></div>
+<div><label>Print layout</label><select id="clueLayout"><option value="below">Clues below grid</option><option value="beside">Clues beside grid</option></select></div>
+</div>
+<label class="check"><input type="checkbox" id="showRows" checked> Show Roman row labels</label>
+<label class="check"><input type="checkbox" id="showCols" checked> Show column numbers</label>
+<label class="check"><input type="checkbox" id="showNums" checked> Show crossword numbering</label>
+<p class="hint">Rows and columns are maximum canvas dimensions. The generated pattern is centered in this canvas. Increase dimensions if words are excluded.</p>
+<div class="actions"><button class="btn primary" id="applySettings">Apply settings</button></div>
+</div>
+<div id="projectTab" class="hidden">
+<h2>Project files</h2>
+<div class="actions"><button class="btn" id="exportJson">Export project JSON</button><label class="btn" style="display:inline-block;margin:0">Import JSON<input id="importJson" type="file" accept="application/json" hidden></label></div>
+<div class="actions"><button class="btn danger" id="newProject">Start new project</button></div>
+<p class="hint">Your words, settings, and generated layout are automatically saved in this browser's localStorage. Export JSON for a portable backup.</p>
+</div>
+</section>
+<section class="panel" id="previewPanel">
+<div class="preview-toolbar no-print"><div class="tabs"><button class="active" id="puzzleView">Puzzle preview</button><button id="answerView">Answer key</button></div><div class="actions" style="margin:0"><button class="btn primary" id="printBtn">Print puzzle</button><button class="btn" id="pdfBtn">Export as PDF</button><button class="btn" id="pngBtn">Export as PNG</button><button class="btn" id="blankBtn">Export blank grid</button></div></div>
+<div class="paper" id="paper"><h2 id="paperTitle">CROSSWORD</h2><div id="crosswordArea"><p class="hint" style="text-align:center">Your crossword will appear here after generation.</p></div><div class="clues" id="clueArea"></div></div>
+<div class="no-print hint" style="margin-top:10px">Click any grid cell to toggle it between white and blocked. Changes that damage an answer will be rejected.</div>
+<div id="excluded" class="excluded"></div>
+</section>
+</main><footer>All processing happens in your browser. For publication, use Print → Save as PDF; vector-like browser output keeps grid lines crisp.</footer>
+<script>
+(()=>{
+const $=id=>document.getElementById(id);
+const sample=[
+["ALGER","Capitale blanche"],["ORAN","Berceau du raï"],["CONSTANTINE","Ville des ponts suspendus"],["ANNABA","La Coquette"],["BEJAIA","Perle de Kabylie"],["TLEMCEN","Cité andalouse"],["SETIF","Ville d’Aïn El Fouara"],["BATNA","Porte des Aurès"],["BLIDA","Ville des roses"],["TIPAZA","Ruines face à la mer"],["TIMIMOUN","Oasis rouge"],["GHARDAIA","Vallée du M’zab"],["BISKRA","Porte du Sahara"],["SKIKDA","Port méditerranéen"],["GUELMA","Ville des thermes"],["SOUK AHRAS","Terre de saint Augustin"],["EL TARF","Région des grands lacs"],["EL KALA","Ville des lacs et du corail"]];
+let words=[], placed=[], editIndex=-1, answerMode=false, manualBlocks=new Set(), generated=false;
+let settings={rows:15,cols:15,cell:30,border:1,block:"#333333",line:"#bfc2c4",orientation:"portrait",layout:"below",showRows:true,showCols:true,showNums:true};
+const clean=s=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+const roman=n=>{let vals=[[1000,"M"],[900,"CM"],[500,"D"],[400,"CD"],[100,"C"],[90,"XC"],[50,"L"],[40,"XL"],[10,"X"],[9,"IX"],[5,"V"],[4,"IV"],[1,"I"]],out="";for(const [v,c] of vals)while(n>=v){out+=c;n-=v}return out};
+function save(){localStorage.setItem("crosswordBookStudio",JSON.stringify({words,settings,placed,manualBlocks:[...manualBlocks],generated}))}
+function renderWords(){$("wordList").innerHTML="";words.forEach((w,i)=>{let d=document.createElement("div");d.className="word";d.innerHTML=`<div><strong>${esc(w.answer)}</strong><small>${esc(w.clue)}</small></div><button class="btn" data-edit="${i}">Edit</button><button class="btn danger" data-del="${i}">Delete</button>`;$("wordList").append(d)});$("wordList").querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{editIndex=+b.dataset.edit;$("answer").value=words[editIndex].answer;$("clue").value=words[editIndex].clue;$("addWord").textContent="Save changes";$("cancelEdit").hidden=false});$("wordList").querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{words.splice(+b.dataset.del,1);editIndex=-1;renderWords();generate(false);save()})}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function add(answer,clue){let a=clean(answer),c=String(clue||"").trim();if(!a||!c)return false;let existing=words.findIndex((w,i)=>clean(w.answer)===a&&i!==editIndex);if(existing>=0){words[existing].clue=c;return true}if(editIndex>=0){words[editIndex]={answer:a,clue:c};editIndex=-1}else words.push({answer:a,clue:c});return true}
+$("addWord").onclick=()=>{if(!add($("answer").value,$("clue").value)){alert("Enter both an answer and a clue.");return}$("answer").value=$("clue").value="";$("addWord").textContent="Add word";$("cancelEdit").hidden=true;renderWords();save()};
+$("cancelEdit").onclick=()=>{editIndex=-1;$("answer").value=$("clue").value="";$("addWord").textContent="Add word";$("cancelEdit").hidden=true};
+$("bulkAdd").onclick=()=>{let n=0;for(let line of $("bulk").value.split(/\r?\n/)){let m=line.match(/^\s*(.+?)\s*(?:—|–|\||\t| - )\s*(.+?)\s*$/);if(m&&add(m[1],m[2]))n++}renderWords();save();$("bulk").value="";$("genStatus").textContent=`Imported ${n} entries.`};
+function fits(grid,word,r,c,dir,first){
+ let dr=dir==="V"?1:0,dc=dir==="H"?1:0,L=word.length;
+ if(r<0||c<0||r+dr*L>grid.length||c+dc*L>grid[0].length)return null;
+ let beforeR=r-dr,beforeC=c-dc,afterR=r+dr*L,afterC=c+dc*L;
+ if(inside(grid,beforeR,beforeC)&&grid[beforeR][beforeC])return null;
+ if(inside(grid,afterR,afterC)&&grid[afterR][afterC])return null;
+ let crosses=0,cells=[];
+ for(let i=0;i<L;i++){let rr=r+dr*i,cc=c+dc*i,ch=grid[rr][cc];if(ch&&ch!==word[i])return null;if(ch===word[i])crosses++;
+ let sides=dir==="H"?[[rr-1,cc],[rr+1,cc]]:[[rr,cc-1],[rr,cc+1]];
+ for(let [sr,sc] of sides)if(inside(grid,sr,sc)&&grid[sr][sc]&&!ch)return null;
+ cells.push([rr,cc])}
+ if(first&&crosses===0)return null;
+ return {r,c,dir,crosses,cells};
+}
+function inside(g,r,c){return r>=0&&c>=0&&r<g.length&&c<g[0].length}
+function put(grid,p,w,ch){p.cells.forEach(([r,c],i)=>grid[r][c]=ch?w[i]:"")}
+function candidates(grid,word,placedList){
+ let out=[];
+ for(let p of placedList)for(let i=0;i<word.length;i++)for(let j=0;j<p.word.length;j++)if(word[i]===p.word[j]){
+ let r=p.r+(p.dir==="V"?j:0)-(p.dir==="H"?i:0),c=p.c+(p.dir==="H"?j:0)-(p.dir==="V"?i:0),d=p.dir==="H"?"V":"H",x=fits(grid,word,r,c,d,false);
+ if(x&&x.crosses)out.push(x)}
+ out.sort((a,b)=>b.crosses-a.crosses);return out;
+}
+function scoreLayout(list){let minR=99,minC=99,maxR=-1,maxC=-1,cross=0;for(let p of list){minR=Math.min(minR,p.r);minC=Math.min(minC,p.c);maxR=Math.max(maxR,p.r+(p.dir==="V"?p.word.length-1:0));maxC=Math.max(maxC,p.c+(p.dir==="H"?p.word.length-1:0));cross+=p.crosses}let area=(maxR-minR+1)*(maxC-minC+1);return list.length*10000+cross*100-area}
+function attempt(source,R,C,seed){
+ let grid=Array.from({length:R},()=>Array(C).fill("")),list=[],remaining=[...source].sort((a,b)=>clean(b.answer).length-clean(a.answer).length);
+ let first=remaining.shift(),w=clean(first.answer);if(w.length>Math.max(R,C))return {list,grid};
+ let dir=seed%2?"V":"H",r=Math.floor((R-(dir==="V"?w.length:1))/2),c=Math.floor((C-(dir==="H"?w.length:1))/2),p=fits(grid,w,r,c,dir,false);
+ if(!p)return {list,grid};put(grid,p,w,true);list.push({...p,word:w,source:first});
+ let failed=[];
+ function dfs(rest,depth){if(!rest.length||depth>250)return;
+ let best=null,bestIdx=-1;
+ for(let k=0;k<rest.length;k++){let cand=candidates(grid,clean(rest[k].answer),list);if(cand.length){let q=cand[seed%(Math.min(cand.length,Math.max(1,1+seed%4)))];if(!best||q.crosses>best.crosses){best=q;bestIdx=k}}}
+ if(best){let item=rest[bestIdx],word=clean(item.answer);put(grid,best,word,true);list.push({...best,word,source:item});let next=rest.filter((_,i)=>i!==bestIdx);dfs(next,depth+1);if(list.length<source.length){let placedSet=new Set(list.map(x=>x.source));for(let x of rest)if(!placedSet.has(x))failed.push(x)}}
+ }
+ // Greedy plus randomized candidate choice; repeat attempts select best result.
+ for(let loop=0;loop<source.length*3;loop++){let choices=[];for(let i=0;i<remaining.length;i++){let cand=candidates(grid,clean(remaining[i].answer),list);if(cand.length)choices.push({i,cand})}if(!choices.length)break;
+ choices.sort((a,b)=>b.cand[0].crosses-a.cand[0].crosses||clean(remaining[b.i].answer).length-clean(remaining[a.i].answer).length);
+ let pick=choices[seed%Math.min(choices.length,Math.max(1,2+seed%3))],idx=pick.i,opts=pick.cand,pl=opts[seed%Math.min(opts.length,1+seed%5)];let item=remaining.splice(idx,1)[0],word=clean(item.answer);put(grid,pl,word,true);list.push({...pl,word,source:item})}
+ return {list,grid};
+}
+function generate(showAlert=true){
+ if(!words.length){$("genStatus").textContent="Add at least one word first.";return}
+ let R=+settings.rows,C=+settings.cols,best={list:[],grid:[]};
+ for(let i=0;i<90;i++){let a=attempt(words,R,C,i*17+3);if(scoreLayout(a.list)>scoreLayout(best.list))best=a}
+ placed=best.list;generated=placed.length>0;manualBlocks.clear();
+ let excluded=words.filter(w=>!placed.some(p=>p.source===w));
+ $("genStatus").className="status"+(excluded.length?" warn":"");
+ $("genStatus").textContent=`Placed ${placed.length} of ${words.length} answers · ${placed.reduce((s,p)=>s+p.crosses,0)} intersections.`;
+ $("excluded").textContent=excluded.length?"Not placed: "+excluded.map(w=>w.answer).join(", ")+". Try a larger grid or regenerate.":"All supplied words were placed.";
+ if(excluded.length&&showAlert){} renderPreview();save();
+}
+function numbered(){let nums={},n=0,starts=[];for(let r=0;r<settings.rows;r++)for(let c=0;c<settings.cols;c++){if(!gridLetter(r,c))continue;let h=placed.some(p=>p.r===r&&p.c===c&&p.dir==="H"),v=placed.some(p=>p.r===r&&p.c===c&&p.dir==="V");if(h||v){nums[r+","+c]=++n;starts.push({r,c,n,h,v})}}return {nums,starts}}
+function gridLetter(r,c){return placed.some(p=>p.cells.some(([rr,cc])=>rr===r&&cc===c))}
+function answerAt(r,c){for(let p of placed)for(let i=0;i<p.cells.length;i++)if(p.cells[i][0]===r&&p.cells[i][1]===c)return p.word[i];return ""}
+function renderPreview(){
+ if(!generated){$("crosswordArea").innerHTML='<p class="hint" style="text-align:center">Your crossword will appear here after generation.</p>';$("clueArea").innerHTML="";return}
+ const R=settings.rows,C=settings.cols,{nums,starts}=numbered(),cell=settings.cell;
+ let table=document.createElement("table");table.className="crossword";table.style.setProperty("--cell",cell+"px");table.style.borderCollapse="collapse";
+ let colline=document.createElement("div");colline.className="colnums";for(let c=0;c<C;c++){let s=document.createElement("span");s.textContent=settings.showCols?c+1:"";colline.append(s)}
+ let wrap=document.createElement("div");wrap.className="gridwrap";
+ let labels=document.createElement("div");labels.className="labels-grid";let left=document.createElement("div");left.className="rowlabels";left.style.gridTemplateRows=`repeat(${R},${cell}px)`;
+ for(let r=0;r<R;r++){let s=document.createElement("span");s.textContent=settings.showRows?roman(r+1):"";left.append(s)}
+ for(let r=0;r<R;r++){let tr=document.createElement("tr");for(let c=0;c<C;c++){let td=document.createElement("td"),letter=answerAt(r,c),blocked=manualBlocks.has(r+","+c)||!letter;td.className=blocked?"block":"";td.dataset.r=r;td.dataset.c=c;td.style.borderWidth=settings.border+"px";td.style.borderColor=blocked?settings.block:settings.line;if(!blocked&&settings.showNums&&nums[r+","+c]){let num=document.createElement("span");num.className="num";num.textContent=nums[r+","+c];td.append(num)}if(answerMode&&!blocked){let l=document.createElement("span");l.className="letter";l.textContent=letter;td.append(l)}tr.append(td)}table.append(tr)}
+ labels.append(left,table);wrap.append(labels);$("crosswordArea").innerHTML="";if(settings.showCols)$("crosswordArea").append(colline);$("crosswordArea").append(wrap);
+ table.onclick=e=>{let td=e.target.closest("td");if(!td)return;let r=+td.dataset.r,c=+td.dataset.c,key=r+","+c,has=answerAt(r,c);if(!has&&!manualBlocks.has(key))return;let was=manualBlocks.has(key);if(!was){let damaged=placed.filter(p=>p.cells.some(([rr,cc])=>rr===r&&cc===c));if(damaged.length){if(!confirm("Blocking this cell will invalidate "+damaged.length+" answer(s). Apply anyway?"))return;alert("This cell belongs to an answer. To preserve clue accuracy, manual blocking is disabled on answer cells.");return}}else manualBlocks.delete(key);renderPreview();save()};
+ const groups={H:[],V:[]};for(let p of placed){let start=nums[p.r+","+p.c];if(start)groups[p.dir].push({n:start,clue:p.source.clue})}for(let d of ["H","V"])groups[d].sort((a,b)=>a.n-b.n);
+ $("clueArea").innerHTML="";for(let d of ["H","V"]){let sec=document.createElement("section");sec.innerHTML=`<h3>${d==="H"?"HORIZONTAL":"VERTICAL"}</h3>`;let ol=document.createElement("ol");for(let x of groups[d]){let li=document.createElement("li");li.value=x.n;li.textContent=x.clue;ol.append(li)}sec.append(ol);$("clueArea").append(sec)}
+ $("paperTitle").textContent=answerMode?"ANSWER KEY":"CROSSWORD";
+ $("clueArea").style.gridTemplateColumns=settings.layout==="beside"?"1fr 1fr":"1fr 1fr";
+}
+$("generate").onclick=()=>generate();$("regenerate").onclick=()=>generate();
+function readSettings(){settings={rows:clamp($("rows").value,5,40),cols:clamp($("cols").value,5,40),cell:clamp($("cellSize").value,12,60),border:clamp($("border").value,.5,4),block:$("blockColor").value,line:$("lineColor").value,orientation:$("orientation").value,layout:$("clueLayout").value,showRows:$("showRows").checked,showCols:$("showCols").checked,showNums:$("showNums").checked};document.querySelector("style").textContent=document.querySelector("style").textContent.replace(/@page\{size:A4 (?:portrait|landscape);/,"@page{size:A4 "+settings.orientation+";");}
+function clamp(v,a,b){return Math.max(a,Math.min(b,+v||a))}
+$("applySettings").onclick=()=>{readSettings();if(generated)generate(false);else renderPreview();save()};
+document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-tab]").forEach(x=>x.classList.toggle("active",x===b));["words","settings","project"].forEach(t=>$(t+"Tab").classList.toggle("hidden",t!==b.dataset.tab))});
+$("puzzleView").onclick=()=>{answerMode=false;$("puzzleView").classList.add("active");$("answerView").classList.remove("active");renderPreview()};
+$("answerView").onclick=()=>{answerMode=true;$("answerView").classList.add("active");$("puzzleView").classList.remove("active");renderPreview()};
+$("printBtn").onclick=()=>{answerMode=false;renderPreview();window.print()};
+$("pdfBtn").onclick=()=>{answerMode=false;renderPreview();window.print()};
+function exportCanvas(blank=false){
+ if(!generated){alert("Generate a crossword first.");return}
+ let scale=blank?4:4,cell=settings.cell*scale,R=settings.rows,C=settings.cols,pad=30*scale,top=70*scale,left=70*scale;
+ let clueRows=blank?0:Math.ceil(placed.length/2)*24*scale,canvas=document.createElement("canvas");canvas.width=left+pad+C*cell;canvas.height=top+pad+R*cell+(blank?0:clueRows+100*scale);
+ let ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle="#111";ctx.font=`bold ${18*scale}px Arial`;ctx.textAlign="center";ctx.fillText(blank?"BLANK CROSSWORD GRID":"CROSSWORD",canvas.width/2,35*scale);
+ ctx.font=`${8*scale}px Arial`;for(let c=0;c<C;c++)if(settings.showCols)ctx.fillText(c+1,left+c*cell+cell/2,top-8*scale);
+ for(let r=0;r<R;r++){if(settings.showRows){ctx.textAlign="right";ctx.fillText(roman(r+1),left-8*scale,top+r*cell+cell*.6)}for(let c=0;c<C;c++){let x=left+c*cell,y=top+r*cell,ch=answerAt(r,c),blocked=!ch||manualBlocks.has(r+","+c);ctx.fillStyle=blocked?settings.block:"#fff";ctx.fillRect(x,y,cell,cell);ctx.strokeStyle=settings.line;ctx.lineWidth=settings.border*scale;ctx.strokeRect(x,y,cell,cell);if(ch&&settings.showNums){let n=numbered().nums[r+","+c];if(n){ctx.fillStyle="#111";ctx.textAlign="left";ctx.font=`${7*scale}px Arial`;ctx.fillText(n,x+3*scale,y+9*scale)}}if(answerMode&&ch&&!blocked){ctx.fillStyle="#111";ctx.textAlign="center";ctx.font=`bold ${17*scale}px Arial`;ctx.fillText(ch,x+cell/2,y+cell*.68)}}}
+ if(!blank){let y=top+R*cell+38*scale;for(let d of ["H","V"]){ctx.textAlign="left";ctx.fillStyle="#111";ctx.font=`bold ${11*scale}px Arial`;ctx.fillText(d==="H"?"HORIZONTAL":"VERTICAL",pad,y);y+=18*scale;let arr=placed.filter(p=>p.dir===(d==="H"?"H":"V")).sort((a,b)=>numbered().nums[a.r+","+a.c]-numbered().nums[b.r+","+b.c]);ctx.font=`${9*scale}px Arial`;for(let p of arr){let n=numbered().nums[p.r+","+p.c];ctx.fillText(`${n}. ${p.source.clue}`,pad,y);y+=15*scale}y+=12*scale}}
+ let a=document.createElement("a");a.download=blank?"crossword-blank-grid.png":"crossword-puzzle-300dpi.png";a.href=canvas.toDataURL("image/png");a.click()
+}
+$("pngBtn").onclick=()=>{answerMode=false;exportCanvas(false)};$("blankBtn").onclick=()=>exportCanvas(true);
+$("exportJson").onclick=()=>{let data={version:1,words,settings,placed:placed.map(p=>({r:p.r,c:p.c,dir:p.dir,word:p.word,answer:p.source.answer,clue:p.source.clue})),generated};download("crossword-project.json",JSON.stringify(data,null,2),"application/json")};
+function download(name,data,type){let a=document.createElement("a"),u=URL.createObjectURL(new Blob([data],{type}));a.href=u;a.download=name;a.click();URL.revokeObjectURL(u)}
+$("importJson").onchange=async e=>{try{let x=JSON.parse(await e.target.files[0].text());words=x.words||[];settings={...settings,...x.settings};syncSettings();renderWords();generate(false);save()}catch(err){alert("Could not read that project file.")}};
+function syncSettings(){for(let [k,id] of Object.entries({rows:"rows",cols:"cols",cell:"cellSize",border:"border",block:"blockColor",line:"lineColor",orientation:"orientation",layout:"clueLayout",showRows:"showRows",showCols:"showCols",showNums:"showNums"}))$(id).type==="checkbox"?$(id).checked=!!settings[k]:$(id).value=settings[k]}
+$("newProject").onclick=()=>{if(!confirm("Start a new project and discard the current browser-saved project?"))return;words=[];placed=[];generated=false;manualBlocks.clear();renderWords();renderPreview();$("genStatus").textContent="New project. Add words to begin.";save()};
+function restore(){try{let x=JSON.parse(localStorage.getItem("crosswordBookStudio"));if(x){words=x.words||[];settings={...settings,...x.settings};manualBlocks=new Set(x.manualBlocks||[]);syncSettings();if(words.length)generate(false);}}catch(e){}renderWords()}
+restore();
+})();
+</script></body></html>
